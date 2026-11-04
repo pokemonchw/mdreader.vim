@@ -1,0 +1,6 @@
+/node_modules/
+/doc/tags
+*.swp
+*.swo
+*~
+__pycache__/

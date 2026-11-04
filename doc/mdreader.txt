@@ -1,0 +1,95 @@
+*mdreader.txt*  Browser-rendered Markdown in a terminal Vim window
+
+mdreader.vim                                                  *mdreader*
+
+REQUIREMENTS
+
+Linux terminal Vim with jobs, channels, timers, getcellpixels(), echoraw(),
+WinResized, SafeState and popup APIs. Tested with Vim 9.2 and Konsole 26.08.2.
+Node.js >= 20.19, npm and system Chromium are required. The terminal must support
+Kitty graphics PNG transmission and placements. Neovim, GUI Vim and terminal
+multiplexer passthrough are not supported/verified.
+
+Run `npm ci` in the plugin directory. With vim-plug: >
+    Plug 'pokemonchw/mdreader.vim', { 'do': 'npm ci' }
+    set mouse=a
+<
+COMMANDS                                            *:MDReaderToggle*
+
+:MDReaderToggle      Toggle the current Markdown window between source and
+                     browser rendering. Unsaved source text is included.
+
+MAPPINGS                                            *mdreader-mappings*
+
+<S-F2>, <F14>        Toggle in Markdown buffers (normal, insert, visual modes).
+                     Existing mappings are preserved.
+<Plug>(MDReaderToggle)                         *<Plug>(MDReaderToggle)*
+                     Public toggle mapping, available in n/i/x modes.
+
+Inside the reader:
+q, <Esc>             Return to the original source buffer.
+j/k, arrows, wheel   Scroll.
+<Space>/b, <C-F>/<C-B>, <PageDown>/<PageUp>  Page down/up.
+<C-D>/<C-U>          Half page down/up.
+gg/G, <Home>/<End>   Go to the start/end.
++/-                  Change font size (12-36 px).
+/                    Search; n/N repeats forwards/backwards.
+y, <C-C>             Copy selected DOM text to the system clipboard.
+r, <C-L>             Redraw the current snapshot.
+Mouse drag/release   Select and copy text. Double/triple click selects word/line.
+
+Code blocks and the document header contain copy buttons. Vim's usual Ctrl-W
+window navigation remains available. Preview occupies only its own split.
+Changes made to source in another split appear after toggling out and back in.
+
+OPTIONS                                             *mdreader-options*
+
+Set options before the plugin loads. Paths are executable names or full paths,
+not shell commands; custom clipboard arguments are passed without a shell.
+
+g:mdreader_node                                    *g:mdreader_node*
+    Default: 'node'. Node.js executable.
+g:mdreader_browser                                 *g:mdreader_browser*
+    Default: first executable among chromium, chromium-browser, google-chrome,
+    google-chrome-stable.
+g:mdreader_font_size                               *g:mdreader_font_size*
+    Default: 18. Initial pixel size, clamped to 12-36. Size and scroll position
+    are remembered per source buffer until Vim exits.
+g:mdreader_clipboard                               *g:mdreader_clipboard*
+    Default: []. Auto-detect wl-copy, xclip, xsel, then KDE Klipper through
+    qdbus6/qdbus. For a custom provider, supply an argv list; text goes to stdin: >
+        let g:mdreader_clipboard = ['wl-copy']
+<   Klipper takes text as an argument and cannot handle very large copies; use
+    a stdin provider for large documents.
+g:mdreader_default_mappings                        *g:mdreader_default_mappings*
+    Default: 1. Set to 0 to disable Shift+F2/F14 defaults. Example: >
+        let g:mdreader_default_mappings = 0
+        nmap <Leader>m <Plug>(MDReaderToggle)
+<
+g:mdreader_mouse                                   *g:mdreader_mouse*
+    Default: 1. Install normal-mode global mouse routing unless a mouse mapping
+    already exists. Clicks outside reader windows pass through to Vim. Set to 0
+    before loading to disable routing. Requires 'mouse' to include normal mode.
+
+DETAILS                                             *mdreader-details*
+
+Markdown is rendered with markdown-it, task lists, footnotes and highlight.js.
+HTML is sanitized and document scripts are blocked. Local relative images are
+resolved against the source file directory; remote images make network requests.
+This is not a full implementation of every GitHub extension. Mermaid and math
+rendering are not included. Links to external sites open through xdg-open.
+
+Chromium captures PNG frames; Vim places them using the terminal graphics
+protocol. Selection is browser DOM selection, copied by the helper process.
+Native terminal selection (e.g. Shift-drag) cannot extract text from the image.
+No HTTP server is used. Closing a preview releases its browser and temporary
+files. Only active previews run a layout timer.
+
+The source buffer's syntax and conceal settings are not changed. To show all
+Markdown markers in source mode, optionally use: >
+    autocmd FileType markdown setlocal conceallevel=0
+<
+For startup errors, see :messages. For mouse conflicts, use: >
+    :verbose nmap <LeftMouse>
+<
+vim:tw=78:ts=8:noet:ft=help:norl:
